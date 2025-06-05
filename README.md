@@ -44,8 +44,6 @@ This generates:
 - A `Program.cs` that configures the host
 - A function like `HelloWorldFunction.cs`
 
-------
-
 #### 📄 Step 2: Example Azure Function (C#)
 
 **HelloWorldFunction.cs**
@@ -75,8 +73,6 @@ public class HelloWorldFunction(ILogger<HelloWorldFunction> logger, IHelloWorldH
 
 ```
 
-------
-
 #### 🏁 Step 3: Run Locally
 
 ```bash
@@ -84,8 +80,6 @@ func start
 ```
 
 Visit: http://localhost:7071/api/HelloWorld
-
-------
 
 #### ☁️ Step 4: Deploy to Azure
 
@@ -102,17 +96,13 @@ func azure functionapp publish <your-func-name>
 - Right-click the project → *Publish*
 - Choose *Azure Function App (Windows/Linux)* → Select or create a target → Publish
 
-------
-
-### ✅ Observations for Your Architecture Style
+#### ✅ Observations for Your Architecture Style
 
 Given your emphasis on **clean code, SOLID, and DDD**:
 
 - You can split logic into services and inject them via `DI` in the constructor.
 - Define input/output bindings declaratively (e.g., BlobTrigger, QueueTrigger, CosmosDBTrigger).
 - Keep functions as orchestration points, delegating real logic to injected services.
-
-------
 
 #### DI Setup (Program.cs)
 
