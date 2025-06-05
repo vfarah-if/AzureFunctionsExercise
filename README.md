@@ -28,24 +28,9 @@ To implement **Azure Functions** using **C#**, you can either:
 1. Use **in-process** Azure Functions (runs within the Azure Functions host).
 2. Use the **isolated worker process model** (runs separately with .NET 6+ / .NET 8).
 
-------
+### 🔧 Recommended: .NET 8 Isolated Worker Model (Modern Approach)
 
-## 🔧 Recommended: .NET 8 Isolated Worker Model (Modern Approach)
-
-This approach gives you full control of the host process and is suitable for microservice-style architectures, which I suspect aligns with your work, Vincent.
-
-------
-
-### ✅ Prerequisites
-
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- [Azure Functions Core Tools v4+](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
-- [Visual Studio 2022+](https://visualstudio.microsoft.com/) with Azure Functions tools OR VS Code with Azure Functions extension
-- An Azure subscription (for deployment)
-
-------
-
-### 📁 Step 1: Create a new Azure Functions Project
+#### 📁 Step 1: Create a new Azure Functions Project
 
 ```bash
 ❯ func init FunctionExerciseApp --worker-runtime dotnetIsolated --target-framework net8.0
@@ -61,7 +46,7 @@ This generates:
 
 ------
 
-### 📄 Step 2: Example Azure Function (C#)
+#### 📄 Step 2: Example Azure Function (C#)
 
 **HelloWorldFunction.cs**
 
@@ -92,7 +77,7 @@ public class HelloWorldFunction(ILogger<HelloWorldFunction> logger, IHelloWorldH
 
 ------
 
-### 🏁 Step 3: Run Locally
+#### 🏁 Step 3: Run Locally
 
 ```bash
 func start
@@ -102,9 +87,9 @@ Visit: http://localhost:7071/api/HelloWorld
 
 ------
 
-### ☁️ Step 4: Deploy to Azure
+#### ☁️ Step 4: Deploy to Azure
 
-#### Option A: From CLI
+##### Option A: From CLI
 
 ```bash
 az login
@@ -112,14 +97,14 @@ az functionapp create --resource-group <your-rg> --consumption-plan-location wes
 func azure functionapp publish <your-func-name>
 ```
 
-#### Option B: From Visual Studio
+##### Option B: From Visual Studio
 
 - Right-click the project → *Publish*
 - Choose *Azure Function App (Windows/Linux)* → Select or create a target → Publish
 
 ------
 
-## ✅ Observations for Your Architecture Style
+### ✅ Observations for Your Architecture Style
 
 Given your emphasis on **clean code, SOLID, and DDD**:
 
@@ -129,7 +114,7 @@ Given your emphasis on **clean code, SOLID, and DDD**:
 
 ------
 
-### Bonus: DI Setup (Program.cs)
+#### DI Setup (Program.cs)
 
 ```csharp
 var builder = FunctionsApplication.CreateBuilder(args);
@@ -149,9 +134,9 @@ builder.Build().Run();
 
 ![Test locally using Browser](./assets/browser-execute-function.png)
 
-## XUnit Testing
+### XUnit Testing
 
-### 🔧 1. Function Class (Thin Wrapper)
+#### 🔧 1. Function Class (Thin Wrapper)
 
 This keeps your function declaration minimal and moves logic out.
 
@@ -181,11 +166,9 @@ public class HelloWorldFunction
         response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
         await response.WriteStringAsync(message);
         return response;
-    }
-}
 ```
 
-### ✅ 2. Service Class with Logic (Testable)
+#### ✅ 2. Service Class with Logic (Testable)
 
 ```csharp
 namespace AzureFunctions.Domain.Handlers;
@@ -202,7 +185,7 @@ public class HelloWorldHandler(IGreetingService greetingService) : IHelloWorldHa
         return Task.FromResult(greetingService.GetGreeting(name));
 ```
 
-### 🧪 3. xUnit Test (No need to mock HTTP abstractions)
+#### 🧪 3. xUnit Test (No need to mock HTTP abstractions)
 
 ```csharp
 public class HelloWorldHandlerShould
@@ -222,21 +205,7 @@ public class HelloWorldHandlerShould
         Assert.Equal("Hello Vincent!", actual);
 ```
 
-### 🧩 4. Register Dependencies in `Program.cs`
-
-```csharp
-var host = new HostBuilder()
-    .ConfigureFunctionsWorkerDefaults()
-    .ConfigureServices(services =>
-    {
-        services.AddSingleton<IGreetingService, GreetingService>();
-        services.AddSingleton<IHelloWorldHandler, HelloWorldHandler>();
-    })
-    .Build();
-host.Run();
-```
-
-### ✅ Summary
+#### ✅ Summary
 
 | Component                | Role                           | Testable? |
 | ------------------------ | ------------------------------ | --------- |
