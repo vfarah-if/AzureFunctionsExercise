@@ -1,5 +1,5 @@
 # Azure Functions Exercise
-Practise Serverless and get your ducks in a row. So I use rider and vscode on a mac to set my biased context but I will share links for all IDE and OS types.
+Practise Serverless and get your ducks in a row. I use rider and vscode on a mac, to set up my context but no worries, I will share links for all IDE and OS types.
 
 ### ✅ Prerequisites
 
@@ -214,6 +214,20 @@ public class HelloWorldHandlerShould
 | `HelloWorldHandlerTests` | Pure logic tests, no fakes     | ✅ Yes     |
 
 ![Tests and coverage](./assets/tests-and-coverage.png)
+
+## 🧩 Final Project Structure
+
+Created all the domain logic within the Domain project, simple tests and injected using onion architecture. **Onion Architecture** is a layered architectural pattern for software design that helps achieve a high level of **decoupling**, **testability**, and **maintainability** by organising code based on **domain-centric boundaries**. It was introduced by Jeffrey Palermo as a way to combat common issues in traditional layered architectures, particularly the tendency for dependencies to leak from outer layers inward.
+
+| Layer                       | Responsibility                                          | Depends On               |
+| --------------------------- | ------------------------------------------------------- | ------------------------ |
+| **Domain Model**            | Core business logic (e.g. `Customer`, `Order`, `Money`) | Nothing                  |
+| **Domain Services**         | Interfaces and pure business rules                      | Domain Model             |
+| **Application Services**    | Use cases, orchestration, DTOs                          | Domain + Domain Services |
+| **Infrastructure**          | Persistence, APIs, file systems                         | Application Interfaces   |
+| **Presentation (Optional)** | UI / CLI / HTTP Functions                               | Application Layer        |
+
+![Project Dependencies](./assets/project-diagram.png)
 
 ## References
 
