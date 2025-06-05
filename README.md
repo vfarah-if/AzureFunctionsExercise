@@ -1,4 +1,7 @@
+[TOC]
+
 # Azure Functions Exercise
+
 Practise Serverless and get your ducks in a row. I use rider and vscode on a mac, to set up my context but no worries, I will share links for all IDE and OS types.
 
 *When is serverless better than Kubernetes?* The answer depends on *what* you're building - **serverless** and **Kubernetes** solve different problems and offer distinct trade-offs. However, in many contexts, **serverless** can be *better* than Kubernetes when your goals are **speed of delivery**, **low operational overhead**, and **cost efficiency at scale**. Here's a breakdown:
@@ -16,8 +19,6 @@ Practise Serverless and get your ducks in a row. I use rider and vscode on a mac
 | **Custom Workloads / Long Jobs** | Poor fit - max execution time limits     | Ideal for bespoke runtimes, jobs, queues, stateful apps  |
 | **Vendor Lock-in**               | High (e.g. Azure Functions, AWS Lambda)  | Lower (K8s is portable across clouds/on-prem)            |
 | **Local Dev & Debug**            | Improving (e.g. Azurite + func CLI)      | Requires Docker + K8s tooling                            |
-
-------
 
 ### ✅ When Serverless is Better
 
@@ -124,7 +125,9 @@ public class HelloWorldFunction(ILogger<HelloWorldFunction> logger, IHelloWorldH
 #### 🏁 Step 3: Run Locally
 
 ```bash
-func start
+❯ func start
+# or MakeFile short cut
+❯ make start
 ```
 
 Visit: http://localhost:7071/api/HelloWorld
@@ -134,9 +137,9 @@ Visit: http://localhost:7071/api/HelloWorld
 ##### Option A: From CLI
 
 ```bash
-az login
-az functionapp create --resource-group <your-rg> --consumption-plan-location westeurope --runtime dotnet-isolated --functions-version 4 --name <your-func-name> --storage-account <your-storage>
-func azure functionapp publish <your-func-name>
+❯ az login
+❯ az functionapp create --resource-group <your-rg> --consumption-plan-location westeurope --runtime dotnet-isolated --functions-version 4 --name <your-func-name> --storage-account <your-storage>
+❯ func azure functionapp publish <your-func-name>
 ```
 
 ##### Option B: From Visual Studio
@@ -146,19 +149,54 @@ func azure functionapp publish <your-func-name>
 
 #### ✅ Observations for Your Architecture Style
 
-Given your emphasis on **clean code, SOLID, and DDD**:
+Given the emphasis on **clean code, SOLID, and DDD**:
 
 - You can split logic into services and inject them via `DI` in the constructor.
+
 - Define input/output bindings declaratively (e.g., BlobTrigger, QueueTrigger, CosmosDBTrigger).
+
 - Keep functions as orchestration points, delegating real logic to injected services.
+
+- **Bounded contexts help you:**
+
+  - Organise by *capability* not *technology*
+  - Deploy independently
+  - Scale and cost-optimise by use case
+  - Assign ownership per domain
+
+  ```css
+  src/
+  ├── Pricing.FunctionApp
+  │   ├── GetTariffByPostcode.cs
+  │   ├── CalculatePricePreview.cs
+  │   └── PricingService.cs
+  │
+  ├── Consumption.ContainerApp
+  │   ├── MeterReadingsController.cs
+  │   └── ConsumptionAggregationService.cs
+  │
+  ├── Billing.ContainerApp
+  │   ├── BillGeneratorController.cs
+  │   └── BillingService.cs
+  │
+  ├── Accounts.FunctionApp
+  │   ├── RegisterUserFunction.cs
+  │   └── GetAccountDetailsFunction.cs
+  │
+  ├── Notifications.FunctionApp
+  │   ├── SendBillReadyEmailFunction.cs
+  │   └── SendPaymentReminderFunction.cs
+  │
+  └── SharedKernel
+      └── Validation, Date utils, etc.
+  
+  ```
 
 #### DI Setup (Program.cs)
 
 ```csharp
 var builder = FunctionsApplication.CreateBuilder(args);
-
 builder.ConfigureFunctionsWebApplication();
-
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
@@ -172,9 +210,9 @@ builder.Build().Run();
 
 ![Test locally using Browser](./assets/browser-execute-function.png)
 
-### XUnit Testing
+### 🧪XUnit Testing
 
-#### 🔧 1. Function Class (Thin Wrapper)
+#### Function Class (Thin Wrapper)
 
 This keeps your function declaration minimal and moves logic out.
 
@@ -206,7 +244,7 @@ public class HelloWorldFunction
         return response;
 ```
 
-#### ✅ 2. Service Class with Logic (Testable)
+#### Service Class with Logic (Testable)
 
 ```csharp
 namespace AzureFunctions.Domain.Handlers;
@@ -223,7 +261,7 @@ public class HelloWorldHandler(IGreetingService greetingService) : IHelloWorldHa
         return Task.FromResult(greetingService.GetGreeting(name));
 ```
 
-#### 🧪 3. xUnit Test (No need to mock HTTP abstractions)
+#### xUnit Test (No need to mock HTTP abstractions)
 
 ```csharp
 public class HelloWorldHandlerShould
@@ -245,11 +283,11 @@ public class HelloWorldHandlerShould
 
 #### ✅ Summary
 
-| Component                | Role                           | Testable? |
-| ------------------------ | ------------------------------ | --------- |
-| `HelloWorldFunction`     | Thin glue, Azure-only concerns | ❌ Skip    |
-| `HelloWorldHandler`      | Real business logic            | ✅ Yes     |
-| `HelloWorldHandlerTests` | Pure logic tests, no fakes     | ✅ Yes     |
+| Component                | Role                            | Testable? |
+| ------------------------ | ------------------------------- | --------- |
+| `HelloWorldFunction`     | Thin glue, Azure-only concerns  | ❌ Skip    |
+| `HelloWorldHandler`      | Real business logic or mediator | ✅ Yes     |
+| `HelloWorldHandlerTests` | Pure logic tests, no fakes      | ✅ Yes     |
 
 ![Tests and coverage](./assets/tests-and-coverage.png)
 
@@ -313,24 +351,24 @@ tests/
 
 ### 🔧 Components and Their Roles
 
-#### 🔹 **Azure Functions**
+#### 🔹 Azure Functions
 
 - Lightweight glue code, API surface for queries/commands
 - Stateless, focused on orchestration and delegation
 - Ideal for HTTP endpoints, timers, queue/event triggers
 
-#### 🔹 **Azure Container Apps / AKS**
+#### 🔹 Azure Container Apps / AKS
 
 - Hosts microservices with clean DDD boundaries
 - Useful for long-running workflows, domain services, APIs with internal complexity
 - Supports scaling with **KEDA**, **Dapr**, **service discovery**, etc.
 
-#### 🔹 **Service Bus / Event Grid**
+#### 🔹 Service Bus / Event Grid
 
 - Mediates between producers and consumers
 - Triggers Functions or workers in AKS
 
-#### 🔹 **Azure API Management**
+#### 🔹 Azure API Management
 
 - Unified front door
 - Useful for throttling, authentication, API versioning, etc.
@@ -380,7 +418,7 @@ Great - now that we have the onion architecture scaffolded and xUnit tests runni
 
 ## ✅ GitHub Actions CI/CD for Azure Functions + Container App
 
-### 1. **GitHub Actions Workflow File**
+### GitHub Actions Workflow File
 
 Create a `.github/workflows/deploy.yml`:
 
@@ -462,7 +500,7 @@ jobs:
 
 ## 🔧 Infrastructure as Code with Bicep
 
-### 1. **Bicep Template Example (Function + Container App)**
+### Bicep Template Example (Function + Container App)
 
 Create a `main.bicep` in `/infrastructure`:
 
