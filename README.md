@@ -1,19 +1,19 @@
 # Azure Functions Exercise
 Practise Serverless and get your ducks in a row. I use rider and vscode on a mac, to set up my context but no worries, I will share links for all IDE and OS types.
 
-*When is serverless better than Kubernetes?* The answer depends on *what* you're building — **serverless** and **Kubernetes** solve different problems and offer distinct trade-offs. However, in many contexts, **serverless** can be *better* than Kubernetes when your goals are **speed of delivery**, **low operational overhead**, and **cost efficiency at scale**. Here's a breakdown:
+*When is serverless better than Kubernetes?* The answer depends on *what* you're building - **serverless** and **Kubernetes** solve different problems and offer distinct trade-offs. However, in many contexts, **serverless** can be *better* than Kubernetes when your goals are **speed of delivery**, **low operational overhead**, and **cost efficiency at scale**. Here's a breakdown:
 
 ## ⚖️ Serverless vs Kubernetes
 
 | Feature / Characteristic         | **Serverless (e.g. Azure Functions)**    | **Kubernetes (e.g. AKS, EKS, GKE)**                      |
 | -------------------------------- | ---------------------------------------- | -------------------------------------------------------- |
-| **Operational Overhead**         | Near zero — no infrastructure to manage  | High — manage clusters, nodes, networking, scaling       |
+| **Operational Overhead**         | Near zero - no infrastructure to manage  | High - manage clusters, nodes, networking, scaling       |
 | **Scalability**                  | Auto-scales per event or request         | Manual or auto-scaling, but requires config & monitoring |
-| **Billing**                      | Pay-per-use (GB-s & invocations)         | Pay-per-resource (CPU, RAM, pods) — even if idle         |
-| **Cold Starts**                  | Possible, especially in dynamic triggers | No cold starts — pods stay up (if configured)            |
+| **Billing**                      | Pay-per-use (GB-s & invocations)         | Pay-per-resource (CPU, RAM, pods) - even if idle         |
+| **Cold Starts**                  | Possible, especially in dynamic triggers | No cold starts - pods stay up (if configured)            |
 | **Deployment Complexity**        | Simple (single artifact, few concepts)   | High (YAML, Helm, controllers, operators)                |
 | **Abstractions**                 | High-level (just write code)             | Low-level (manage containers, services, ingress)         |
-| **Custom Workloads / Long Jobs** | Poor fit — max execution time limits     | Ideal for bespoke runtimes, jobs, queues, stateful apps  |
+| **Custom Workloads / Long Jobs** | Poor fit - max execution time limits     | Ideal for bespoke runtimes, jobs, queues, stateful apps  |
 | **Vendor Lock-in**               | High (e.g. Azure Functions, AWS Lambda)  | Lower (K8s is portable across clouds/on-prem)            |
 | **Local Dev & Debug**            | Improving (e.g. Azurite + func CLI)      | Requires Docker + K8s tooling                            |
 
@@ -47,7 +47,7 @@ Practise Serverless and get your ducks in a row. I use rider and vscode on a mac
 | Background processing / queue workers    | Serverless (short) | Consumption-based, triggers from storage/bus |
 | API Gateway with bursty traffic          | Serverless         | Auto-scales, pay-per-request                 |
 | Complex backend with inter-service comms | Kubernetes         | Fine-grained control, service mesh, retries  |
-| Hosting a UI app + backend               | K8s or hybrid      |                                              |
+| Hosting a UI app + backend               | K8s or hybrid      | UIs often need static hosting + API          |
 
 ## ✅ Prerequisites
 
@@ -267,7 +267,253 @@ Created all the domain logic within the Domain project, simple tests and injecte
 
 ![Project Dependencies](./assets/project-diagram.png)
 
-## References
+## 🧩 Hybrid Architecture: Serverless Front-Door + Backend Services
+
+A hybrid architecture offers a pragmatic, layered approach that plays to the strengths of both **serverless** and **Kubernetes (or container-based)** models, while respecting **clean architecture** and **domain boundaries**.
+
+```shell
+# Directory structure
+src/
+├── AzureFunctions.Api
+│   ├── FunctionApp.cs // Startup & DI wiring
+│   └── HttpTriggers/
+│       └── GreetUserFunction.cs
+│
+├── Application
+│   ├── Interfaces/
+│   │   └── IGreetingService.cs
+│   └── UseCases/
+│       └── GetGreetingUseCase.cs
+│
+├── Domain
+│   └── Entities/
+│       └── Greeting.cs
+│
+├── Infrastructure
+│   ├── Services/
+│   │   └── GreetingService.cs
+│   └── Configuration/
+│       └── DIConfig.cs
+│
+└── ApiGateway (optional)
+    └── Azure API Management Bicep templates
+
+services/
+└── GreetingService.Api (Container App or AKS-hosted)
+    └── Controllers/GreetingController.cs
+
+tests/
+├── AzureFunctions.Api.Tests
+│   └── GreetUserFunctionShould.cs
+├── Application.Tests
+│   └── GetGreetingUseCaseShould.cs
+└── Infrastructure.Tests
+    └── GreetingServiceShould.cs
+```
+
+### 🔧 Components and Their Roles
+
+#### 🔹 **Azure Functions**
+
+- Lightweight glue code, API surface for queries/commands
+- Stateless, focused on orchestration and delegation
+- Ideal for HTTP endpoints, timers, queue/event triggers
+
+#### 🔹 **Azure Container Apps / AKS**
+
+- Hosts microservices with clean DDD boundaries
+- Useful for long-running workflows, domain services, APIs with internal complexity
+- Supports scaling with **KEDA**, **Dapr**, **service discovery**, etc.
+
+#### 🔹 **Service Bus / Event Grid**
+
+- Mediates between producers and consumers
+- Triggers Functions or workers in AKS
+
+#### 🔹 **Azure API Management**
+
+- Unified front door
+- Useful for throttling, authentication, API versioning, etc.
+
+### 🧠 Why This Hybrid Model Works
+
+#### ✅ Leverages Serverless for:
+
+- **Event-driven triggers** (queue, blob, CosmosDB change feed)
+- **Cost-effective endpoints** that don’t need always-on services
+- **Decoupling frontend from backend**
+
+#### ✅ Uses Containers for:
+
+- **Longer-running or stateful tasks**
+- **Rich service composition** (e.g., aggregators, workflow engines)
+- **Better dependency management** (e.g., native libraries, custom runtimes)
+
+#### ✅ Enhances Observability & Governance
+
+- App Insights + Log Analytics across both layers
+- Common auth (e.g. via API Management + AAD)
+
+### 🧱 Domain Mapping to Layers
+
+| Clean Architecture Layer | Serverless (Azure Functions)         | Container Services (AKS / Azure Container Apps) |
+| ------------------------ | ------------------------------------ | ----------------------------------------------- |
+| **Presentation**         | HTTP trigger → Command/Query handler | API Gateway, lightweight UI service             |
+| **Application**          | Function handler orchestrates flows  | Use cases implemented via hosted services       |
+| **Domain**               | Injected into either via DI          | Rich domain modelling, aggregates, policies     |
+| **Infrastructure**       | Injected (e.g. Cosmos, Blob, Email)  | Repositories, pub/sub, persistence, etc.        |
+
+### ⚙️ Tooling Recommendations
+
+- **Azurite**: local dev for Azure Queues, Blob Storage (for Functions)
+- **Azure Functions Core Tools**: run/test Functions locally
+- **Bridge to Kubernetes** or **dev containers**: for AKS development
+- **Pulumi / Bicep**: declarative IaC across Function Apps, Container Apps, and API Mgmt
+
+### ⚠️ Gotchas to Consider
+
+- Cold start latency on Functions (use Premium plan if predictable SLAs needed)
+- Consider **Dapr** for service invocation, pub/sub, state store - if you want to avoid tight Azure-coupling
+- Avoid putting business logic in Azure Function bodies; delegate to Application layer to keep testability and onion boundaries clean.
+
+Great - now that we have the onion architecture scaffolded and xUnit tests running, here’s how you can wire in CI/CD using **GitHub Actions** and deploy your hybrid solution using **Bicep templates** (for serverless) and **container apps** or **AKS** (for containerised services).
+
+## ✅ GitHub Actions CI/CD for Azure Functions + Container App
+
+### 1. **GitHub Actions Workflow File**
+
+Create a `.github/workflows/deploy.yml`:
+
+```yaml
+name: Build and Deploy Hybrid Azure App
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['8.x']
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
+
+  deploy-functions:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy Azure Functions via Azure CLI
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Publish Function App
+        run: |
+          dotnet publish src/AzureFunctions.Api -c Release -o publish
+          az functionapp deployment source config-zip \
+            --resource-group <your-rg> \
+            --name <your-function-app> \
+            --src publish.zip
+
+  deploy-container:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build and push Docker image
+        uses: azure/docker-login@v1
+        with:
+          login-server: <your-container-registry>.azurecr.io
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push
+        run: |
+          docker build -t <your-container-registry>.azurecr.io/greetingservice:latest ./services/GreetingService.Api
+          docker push <your-container-registry>.azurecr.io/greetingservice:latest
+
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name greeting-api \
+            --resource-group <your-rg> \
+            --image <your-container-registry>.azurecr.io/greetingservice:latest
+```
+
+## 🔧 Infrastructure as Code with Bicep
+
+### 1. **Bicep Template Example (Function + Container App)**
+
+Create a `main.bicep` in `/infrastructure`:
+
+```bicep
+resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
+  name: 'greeting-func-app'
+  location: resourceGroup().location
+  kind: 'functionapp'
+  properties: {
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      appSettings: [
+        { name: 'FUNCTIONS_WORKER_RUNTIME'; value: 'dotnet-isolated' }
+        { name: 'WEBSITE_RUN_FROM_PACKAGE'; value: '1' }
+      ]
+    }
+  }
+}
+
+resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
+  name: 'greeting-container-api'
+  location: resourceGroup().location
+  properties: {
+    kubeEnvironmentId: containerEnv.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'greeting'
+          image: '<your-acr>.azurecr.io/greetingservice:latest'
+        }
+      ]
+    }
+  }
+}
+```
+
+Then deploy with:
+
+```bash
+az deployment group create \
+  --resource-group <your-rg> \
+  --template-file ./infrastructure/main.bicep
+```
+
+## 📦References
 
 - [Getting Started with Azure Functions: C# and Visual Studio Code Tutorial](https://www.youtube.com/watch?v=Mb_eUDwVHos)
 
