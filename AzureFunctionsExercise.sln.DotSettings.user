@@ -1,0 +1,17 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/CodeInspection/ExcludedFiles/FilesAndFoldersToSkip2/=7020124F_002D9FFC_002D4AC3_002D8F3D_002DAAB8E0240759_002Ff_003AFunctionsApplicationInsightsExtensions_002Ecs_002Fl_003A_002E_002E_003F_002E_002E_003FLibrary_003FApplication_0020Support_003FJetBrains_003FRider2025_002E1_003Fresharper_002Dhost_003FSourcesCache_003F5c4bcdc2f29ced860b7b6ea4f24f4e66477f3962564b3b284b383ce1f2b11_003FFunctionsApplicationInsightsExtensions_002Ecs/@EntryIndexedValue">ForceIncluded</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=6e99b266_002D78c0_002D4621_002Dbdac_002D0cb50f23581b/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="ReturnAGreetingResponse" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::2F181C8E-F29C-4BC8-A6B5-7A7BC4A260F3::net8.0::FunctionExerciseApp.Tests.HelloWorldFunctionShould.ReturnAGreetingResponse&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=9d15cda6_002D2174_002D4617_002D9583_002Db85e4152b9f0/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="ReturnAGreetingResponse #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::2F181C8E-F29C-4BC8-A6B5-7A7BC4A260F3::net8.0::FunctionExerciseApp.Tests.Services.GreetingServiceShould.ReturnGreeting&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=e15a4a5d_002Df8d4_002D47b7_002D8f4b_002D02953116e422/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="ReturnExpectedGreeting" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
+  &lt;TestAncestor&gt;
+    &lt;TestId&gt;xUnit::2F181C8E-F29C-4BC8-A6B5-7A7BC4A260F3::net8.0::FunctionExerciseApp.Tests.HelloWorldHandlerShould.ReturnExpectedGreeting&lt;/TestId&gt;
+  &lt;/TestAncestor&gt;
+&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

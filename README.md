@@ -1,5 +1,5 @@
 # Azure Functions Exercise
-Practise Serverless and get your ducks in a row. So I use Rider and vscode, which means I needed to install stuff and setup stuff Visual Studio is nice enough to give me out of the box.
+Practise Serverless and get your ducks in a row. So I use rider and vscode on a mac to set my biased context but I will share links for all IDE and OS types.
 
 ### ✅ Prerequisites
 
@@ -48,9 +48,9 @@ This approach gives you full control of the host process and is suitable for mic
 ### 📁 Step 1: Create a new Azure Functions Project
 
 ```bash
-❯func init FunctionExerciseApp --worker-runtime dotnetIsolated --target-framework net8.0
-❯cd FunctionExerciseApp
-❯func new --name HelloWorldFunction --template "HttpTrigger"
+❯ func init FunctionExerciseApp --worker-runtime dotnetIsolated --target-framework net8.0
+❯ cd FunctionExerciseApp
+❯ func new --name HelloWorldFunction --template "HttpTrigger"
 ```
 
 This generates:
@@ -66,34 +66,28 @@ This generates:
 **HelloWorldFunction.cs**
 
 ```csharp
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
 using System.Net;
+using AzureFunctions.Domain.Handlers;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
+using Microsoft.Azure.Functions.Worker.Http;
 
-namespace MyFunctionApp;
+namespace FunctionExerciseApp;
 
-public class HelloWorldFunction
+[ExcludeFromCodeCoverage(Justification = "Thin glue, Azure-only concerns tested by Microsoft")]
+public class HelloWorldFunction(ILogger<HelloWorldFunction> logger, IHelloWorldHandler handler)
 {
-    private readonly ILogger _logger;
-
-    public HelloWorldFunction(ILoggerFactory loggerFactory)
+    [Function("HelloWorldFunction")]
+    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequestData req)
     {
-        _logger = loggerFactory.CreateLogger<HelloWorldFunction>();
-    }
-
-    [Function("HelloWorld")]
-    public HttpResponseData Run(
-        [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req)
-    {
-        _logger.LogInformation("C# HTTP trigger function processed a request.");
-
+        logger.LogInformation("C# HTTP trigger function processed a request.");
+        var message = await handler.HandleAsync("Vincent");
         var response = req.CreateResponse(HttpStatusCode.OK);
-        response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
-        response.WriteString("Hello, Vincent! Your Azure Function is running.");
+        await response.WriteStringAsync(message);
         return response;
     }
 }
+
 ```
 
 ------
@@ -138,33 +132,122 @@ Given your emphasis on **clean code, SOLID, and DDD**:
 ### Bonus: DI Setup (Program.cs)
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using MyFunctionApp;
+var builder = FunctionsApplication.CreateBuilder(args);
 
+builder.ConfigureFunctionsWebApplication();
+
+builder.Services
+    .AddApplicationInsightsTelemetryWorkerService()
+    .ConfigureFunctionsApplicationInsights();
+builder.Services
+    .AddSingleton<IGreetingService, GreetingService>()
+    .AddSingleton<IHelloWorldHandler, HelloWorldHandler>();
+builder.Build().Run();
+```
+
+![Starting hello world](./assets/starting-hello-world.png)
+
+![Test locally using Browser](./assets/browser-execute-function.png)
+
+## XUnit Testing
+
+### 🔧 1. Function Class (Thin Wrapper)
+
+This keeps your function declaration minimal and moves logic out.
+
+```csharp
+using AzureFunctions.Domain.Services;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using System.Net;
+using System.Threading.Tasks;
+
+public class HelloWorldFunction
+{
+    private readonly IHelloWorldHandler _handler;
+
+    public HelloWorldFunction(IHelloWorldHandler handler)
+    {
+        _handler = handler;
+    }
+
+    [Function("HelloWorld")]
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequestData req)
+    {
+        var message = await _handler.HandleAsync();
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        response.Headers.Add("Content-Type", "text/plain; charset=utf-8");
+        await response.WriteStringAsync(message);
+        return response;
+    }
+}
+```
+
+### ✅ 2. Service Class with Logic (Testable)
+
+```csharp
+namespace AzureFunctions.Domain.Handlers;
+
+public interface IHelloWorldHandler
+{
+    Task<string> HandleAsync(string name);
+}
+
+public class HelloWorldHandler(IGreetingService greetingService) : IHelloWorldHandler
+{
+    public Task<string> HandleAsync(string name = "Vincent")
+    {
+        return Task.FromResult(greetingService.GetGreeting(name));
+```
+
+### 🧪 3. xUnit Test (No need to mock HTTP abstractions)
+
+```csharp
+public class HelloWorldHandlerShould
+{
+    [Fact]
+    public async Task ReturnExpectedGreeting()
+    {
+      	// Arrange
+        var mockGreetingService = new Mock<IGreetingService>();
+        mockGreetingService
+            .Setup(greetingService => greetingService.GetGreeting("Vincent"))
+            .Returns("Hello Vincent!");
+        var handler = new HelloWorldHandler(mockGreetingService.Object);
+      	// Act
+        var actual = await handler.HandleAsync("Vincent");
+      	// Assert
+        Assert.Equal("Hello Vincent!", actual);
+```
+
+### 🧩 4. Register Dependencies in `Program.cs`
+
+```csharp
 var host = new HostBuilder()
     .ConfigureFunctionsWorkerDefaults()
     .ConfigureServices(services =>
     {
-        services.AddSingleton<IMyService, MyService>();
+        services.AddSingleton<IGreetingService, GreetingService>();
+        services.AddSingleton<IHelloWorldHandler, HelloWorldHandler>();
     })
     .Build();
-
 host.Run();
 ```
 
-------
+### ✅ Summary
 
-Would you like a sample project repo or additional bindings example (e.g., QueueTrigger, TimerTrigger, or BlobTrigger)?
+| Component                | Role                           | Testable? |
+| ------------------------ | ------------------------------ | --------- |
+| `HelloWorldFunction`     | Thin glue, Azure-only concerns | ❌ Skip    |
+| `HelloWorldHandler`      | Real business logic            | ✅ Yes     |
+| `HelloWorldHandlerTests` | Pure logic tests, no fakes     | ✅ Yes     |
 
-
-
-
+![Tests and coverage](./assets/tests-and-coverage.png)
 
 ## References
 
 - [Getting Started with Azure Functions: C# and Visual Studio Code Tutorial](https://www.youtube.com/watch?v=Mb_eUDwVHos)
 
 - [Getting Started With Azure Functions - HTTP & Timer Triggers](https://www.youtube.com/watch?v=l3beXs3o-0w)
-
-.
