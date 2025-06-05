@@ -1,7 +1,55 @@
 # Azure Functions Exercise
 Practise Serverless and get your ducks in a row. I use rider and vscode on a mac, to set up my context but no worries, I will share links for all IDE and OS types.
 
-### ✅ Prerequisites
+*When is serverless better than Kubernetes?* The answer depends on *what* you're building — **serverless** and **Kubernetes** solve different problems and offer distinct trade-offs. However, in many contexts, **serverless** can be *better* than Kubernetes when your goals are **speed of delivery**, **low operational overhead**, and **cost efficiency at scale**. Here's a breakdown:
+
+## ⚖️ Serverless vs Kubernetes
+
+| Feature / Characteristic         | **Serverless (e.g. Azure Functions)**    | **Kubernetes (e.g. AKS, EKS, GKE)**                      |
+| -------------------------------- | ---------------------------------------- | -------------------------------------------------------- |
+| **Operational Overhead**         | Near zero — no infrastructure to manage  | High — manage clusters, nodes, networking, scaling       |
+| **Scalability**                  | Auto-scales per event or request         | Manual or auto-scaling, but requires config & monitoring |
+| **Billing**                      | Pay-per-use (GB-s & invocations)         | Pay-per-resource (CPU, RAM, pods) — even if idle         |
+| **Cold Starts**                  | Possible, especially in dynamic triggers | No cold starts — pods stay up (if configured)            |
+| **Deployment Complexity**        | Simple (single artifact, few concepts)   | High (YAML, Helm, controllers, operators)                |
+| **Abstractions**                 | High-level (just write code)             | Low-level (manage containers, services, ingress)         |
+| **Custom Workloads / Long Jobs** | Poor fit — max execution time limits     | Ideal for bespoke runtimes, jobs, queues, stateful apps  |
+| **Vendor Lock-in**               | High (e.g. Azure Functions, AWS Lambda)  | Lower (K8s is portable across clouds/on-prem)            |
+| **Local Dev & Debug**            | Improving (e.g. Azurite + func CLI)      | Requires Docker + K8s tooling                            |
+
+------
+
+### ✅ When Serverless is Better
+
+1. **Short-lived workloads**
+    e.g. APIs, webhooks, event handlers, automation scripts.
+2. **Variable or Spiky Load**
+    Scale from 0 to thousands instantly without pre-provisioning.
+3. **Low Ops Team Size**
+    Serverless offloads provisioning, scaling, patching, and availability.
+4. **Cost Control at Low Volume**
+    You only pay when the code runs, ideal for prototypes, event-driven logic, or infrequent processes.
+5. **Tightly Integrated with Platform**
+    e.g. Azure Functions + Event Grid + CosmosDB triggers = powerful glue code.
+
+### ❌ Where Kubernetes Might Be Better
+
+- **You need full control over the runtime**, storage, network policies, and service mesh.
+- **Stateful, long-running or custom workloads** like data processing pipelines, gameservers, or ML model hosting.
+- **Multi-tenant SaaS with container isolation requirements**.
+- **You’re running polyglot microservices** not easily expressible as functions.
+
+### 🔍 Realistic Trade-Off in Enterprise
+
+| Scenario                                 | Better Choice      | Why                                          |
+| ---------------------------------------- | ------------------ | -------------------------------------------- |
+| Data ingestion pipeline                  | Serverless         | Simple scale-out and event triggers          |
+| Background processing / queue workers    | Serverless (short) | Consumption-based, triggers from storage/bus |
+| API Gateway with bursty traffic          | Serverless         | Auto-scales, pay-per-request                 |
+| Complex backend with inter-service comms | Kubernetes         | Fine-grained control, service mesh, retries  |
+| Hosting a UI app + backend               | K8s or hybrid      |                                              |
+
+## ✅ Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download)
 - [Azure Functions Core Tools v4+](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
