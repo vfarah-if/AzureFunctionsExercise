@@ -98,14 +98,6 @@ This generates:
 **HelloWorldFunction.cs**
 
 ```csharp
-using System.Net;
-using AzureFunctions.Domain.Handlers;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Logging;
-using Microsoft.Azure.Functions.Worker.Http;
-
-namespace FunctionExerciseApp;
-
 [ExcludeFromCodeCoverage(Justification = "Thin glue, Azure-only concerns tested by Microsoft")]
 public class HelloWorldFunction(ILogger<HelloWorldFunction> logger, IHelloWorldHandler handler)
 {
@@ -118,8 +110,6 @@ public class HelloWorldFunction(ILogger<HelloWorldFunction> logger, IHelloWorldH
         await response.WriteStringAsync(message);
         return response;
     }
-}
-
 ```
 
 #### 🏁 Step 3: Run Locally
